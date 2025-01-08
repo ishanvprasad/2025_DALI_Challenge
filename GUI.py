@@ -207,4 +207,4 @@ def update_image(image_contents, noise_kernel, close_kernel, blur_kernel, morph_
         return f"Error processing image: {e}"
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, host="0.0.0.0", port=8050)

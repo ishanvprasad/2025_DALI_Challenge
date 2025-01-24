@@ -100,7 +100,7 @@ app.layout = html.Div([
                     min=0.2,
                     max=1,
                     step=0.05,
-                    value=0.35,
+                    value=0.40,
                     marks={
                         int(i * 0.05) if (i * 0.05) % 1 == 0 else round(i * 0.05, 2): 
                         str(int(i * 0.05)) if (i * 0.05) % 1 == 0 else str(round(i * 0.05, 2)) 

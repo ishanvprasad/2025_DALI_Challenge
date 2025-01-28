@@ -10,12 +10,12 @@ import numpy as np
 import plotly.graph_objects as go
 from backend import Backend
 
-# Create the Dash app
 app = dash.Dash(__name__)
 
-# Define the layout of the app
 app.layout = html.Div([
-    # Container for the "Select Image" button and sliders
+    # Container for image selection and hyperparameter tuning
+    # note that the value parameter holds the hyperparameter value I found was best, 
+    # but it is adjustable with an adaptive plot of the results
     html.Div([
         # File upload button
         dcc.Upload(
@@ -24,6 +24,7 @@ app.layout = html.Div([
             multiple=False
         ),
 
+        # preprocessing hyperparameter tuning for morphological operations
         html.Label('Noise Kernel Size (1-10):'),
         html.Div(
             dcc.Slider(
@@ -37,6 +38,8 @@ app.layout = html.Div([
             ),
             style={'width': '80%', 'margin': '10px auto'}
         ),
+        
+        # preprocessing hyperparameter tuning for morphological operations
         html.Label('Close Kernel Size (1-10):'),
         html.Div(
             dcc.Slider(
@@ -51,7 +54,7 @@ app.layout = html.Div([
             style={'width': '80%', 'margin': '10px auto'}
         ),
 
-        # Sliders for image processing parameters
+        # Sliders for counting hyperparameters
         html.Div([
             html.Label('Blur Kernel Size (2-10):'),
             html.Div(
@@ -111,9 +114,8 @@ app.layout = html.Div([
                 style={'width': '80%', 'margin': '10px auto'}
             ),
         ], style={'textAlign': 'center', 'marginTop': '20px', 'marginBottom': '20px'}),
-    ], style={'textAlign': 'center', 'marginBottom': '20px'}),  # Center the button and sliders
+    ], style={'textAlign': 'center', 'marginBottom': '20px'}),
 
-    # Horizontal rule with margin for separation
     html.Hr(style={'marginTop': '20px', 'marginBottom': '20px'}),
 
     # Container to display the Plotly image
@@ -121,7 +123,10 @@ app.layout = html.Div([
              style={'height': 'auto', 'width': '100%', 'display': 'flex', 'justify-content': 'center', 'align-items': 'center'})
 ])
 
-# Define callback to update the image display and apply processing
+'''
+NOTE: for the sake of clarity I've kept the following with relatively little documentation, 
+this is just setting up the GUI so it works and adapts to user input - more of the web dev stuff than the data science.
+'''
 @app.callback(
     Output('output-image-upload', 'children'),
     Input('upload-image', 'contents'),
@@ -130,50 +135,43 @@ app.layout = html.Div([
     Input('blur-slider', 'value'),
     Input('morph-slider', 'value'),
     Input('contour-thresh-slider', 'value'),
-    Input('roundness-thresh-slider', 'value')  # Include the new slider input
+    Input('roundness-thresh-slider', 'value')
 )
 def update_image(image_contents, noise_kernel, close_kernel, blur_kernel, morph_kernel, area_thresh, roundness_thresh):
-    # If no image is uploaded, return a message to upload one
     if image_contents is None:
         return 'Upload an image to display.'
 
     try:
-        # Decode the image from base64
         content_type, content_string = image_contents.split(',')
         decoded = base64.b64decode(content_string)
         
-        # Save the decoded image to a temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
             tmp_file.write(decoded)
-            tmp_file_path = tmp_file.name  # This is the absolute file path
+            tmp_file_path = tmp_file.name
 
-        # Now pass the file path to the Backend class
         final_image, num_barnacles = Backend(tmp_file_path, noise_kernel, close_kernel, blur_kernel, morph_kernel, area_thresh, roundness_thresh).count()
 
-        # Convert the processed image back to a Plotly-compatible format
         processed_image = np.array(final_image)
 
-        # Create a Plotly figure with the processed image
         fig = go.Figure(go.Image(z=processed_image))
 
-        # Adjust the layout of the figure to fit in the container
         fig.update_layout(
             xaxis={
                 'showgrid': False, 
                 'zeroline': False, 
                 'showticklabels': False, 
-                'scaleanchor': 'y'  # Constrains the x-axis to the aspect ratio of the y-axis
+                'scaleanchor': 'y'
             },
             yaxis={
                 'showgrid': False, 
                 'zeroline': False, 
                 'showticklabels': False, 
-                'scaleanchor': 'x'  # Constrains the y-axis to the aspect ratio of the x-axis
+                'scaleanchor': 'x'
             },
-            margin=dict(l=0, r=0, t=0, b=0),  # Remove margins around the image
-            dragmode='zoom',  # Enable zooming
-            hovermode='closest',  # Show data point details on hover (optional)
-            title="Zoom and Pan Enabled",  # Optional title
+            margin=dict(l=0, r=0, t=0, b=0), 
+            dragmode='zoom', 
+            hovermode='closest',
+            title="Zoom and Pan Enabled",
         )
 
         # Return both the figure and the barnacle count as text
@@ -187,7 +185,7 @@ def update_image(image_contents, noise_kernel, close_kernel, blur_kernel, morph_
                         'doubleClick': 'reset',  # Reset zoom on double click
                         'showTips': False,       # Disable hover tips for cleaner display
                         'displaylogo': False,    # Hide the Plotly logo
-                        'modeBarButtonsToRemove': ['toImage', 'resetScale2d'],  # Optional: Customize the mode bar
+                        'modeBarButtonsToRemove': ['toImage', 'resetScale2d'],
                         'modeBarButtonsToAdd': [
                             'zoom2d', 'pan2d', 'resetScale2d', 'zoomIn2d', 'zoomOut2d'
                         ]
